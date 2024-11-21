@@ -34,6 +34,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     }    
 
+    function clearVariablesAndDisableButton() {
+        projectName = null;
+        projectVersion = null;
+        studioVersion = null;
+        commitHash = null;
+        commitUser = null;
+        repoName = null;
+        deploymentUsername = null;
+        deploymentDate = null;
+        finishDate = null;
+    
+        logButton.disabled = true;
+        deployButton.disabled = true;
+    }
+        
+
     deploymentUsernameSelect.addEventListener('change', () => {
         groupSelectContainer.style.display = 'block';
         groupSelect.innerHTML = '<option selected disabled>Select group</option>';
@@ -48,11 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(groups => {
+            groupSelect.innerHTML = '<option selected disabled>Select group</option>';
+    
             groups.forEach(group => {
-                const option = document.createElement('option');
-                option.value = group.id;
-                option.textContent = group.name;
-                groupSelect.appendChild(option);
+                if (group.name.indexOf(' ') === -1 && (!group.name.startsWith('GRP-') || group.name === 'GRP-ARPA')) {
+                    const option = document.createElement('option');
+                    if (group.name === 'GRP-ARPA') {
+                        option.value = group.id;
+                        option.textContent = 'EVERYTHING';
+                    } else {
+                        option.value = group.id;
+                        option.textContent = group.name;
+                    }
+                    groupSelect.appendChild(option);
+                }
             });
             groupSpinner.style.display = 'none';
         })
@@ -61,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             groupSpinner.style.display = 'none';
         });
     }
+    
     
      
 
@@ -72,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const groupId = groupSelect.value;
     
-        fetch(`${gitlabApiUrl}/groups/${groupId}/projects`, {
+        fetch(`${gitlabApiUrl}/groups/${groupId}/projects?per_page=100`, {
             headers: { 'Authorization': `Bearer ${privateToken}` }
         })
         .then(response => response.json())
@@ -94,15 +120,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Clear information and show commits when repo changes
     repoSelect.addEventListener('change', () => {
-        // Clear displayed information
         resultOrange.innerHTML = '';
         resultBlue.innerHTML = '';
         commitSelectContainer.style.display = 'none';
         commitSelect.innerHTML = '<option selected disabled>Select commit</option>';
-        commitSpinner.style.display = 'block'
-
+        commitSpinner.style.display = 'block';
+    
+        clearVariablesAndDisableButton();
+    
         repoName = repoSelect.options[repoSelect.selectedIndex].text;
-
+    
         const repoId = repoSelect.value;
         if (repoId) {
             fetch(`${gitlabApiUrl}/projects/${repoId}/repository/commits`, {
@@ -113,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 commits.slice(0, 5).forEach(commit => {
                     const option = document.createElement('option');
                     option.value = commit.id;
-                    option.textContent = `${commit.short_id} - ${commit.author_name}`;
+                    option.textContent = `${commit.short_id} - ${commit.title}`;
                     commitSelect.appendChild(option);
                 });
                 commitSelectContainer.style.display = 'block';
@@ -125,13 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+    
 
     // Fetch project.json on commit select
     commitSelect.addEventListener('change', () => {
         const repoId = repoSelect.value;
         const commitId = commitSelect.value;
         deploymentUsername = deploymentUsernameSelect.value;
-
+    
         if (repoId && commitId && deploymentUsername) {
             fetch(`${gitlabApiUrl}/projects/${repoId}/repository/commits/${commitId}`, {
                 headers: { 'Authorization': `Bearer ${privateToken}` }
@@ -140,7 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(commit => {
                 commitHash = commit.id;
                 commitUser = commit.author_name;
-
+                const commitTitle = commit.title;
+    
                 fetch(`${gitlabApiUrl}/projects/${repoId}/repository/files/project.json/raw?ref=${commitId}`, {
                     headers: { 'Authorization': `Bearer ${privateToken}` }
                 })
@@ -149,25 +178,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     projectName = content.name;
                     projectVersion = content.projectVersion;
                     studioVersion = content.studioVersion;
-
+    
                     deploymentDate = new Date();
                     finishDate = new Date(deploymentDate.getTime() + 5 * 60000);
-
+    
                     resultOrange.innerHTML = `
-                    <h5>Deployment Username: <span class="text-dark">${deploymentUsername}</span></h5>
-                    <h5>Commit Hash: <span class="text-dark">${commitHash}</span></h5>
-                    <h5>Repository Name: <span class="text-dark">${repoName}</span></h5>
-                    <h5>Project Version: <span class="text-dark">${projectVersion}</span></h5>
-                    <h5>Studio Version: <span class="text-dark">${studioVersion}</span></h5>
-                    <h5>Deployment Date: <span class="text-dark">${formatDate(deploymentDate)}</span></h5>
-                    <h5>Finish Date: <span class="text-dark">${formatDate(finishDate)}</span></h5>
-                `;
-                
-
+                        <h5>Deployment Username: <span class="text-dark">${deploymentUsername}</span></h5>
+                        <h5>Commit Hash: <span class="text-dark">${commitHash}</span></h5>
+                        <h5>Repository Name: <span class="text-dark">${repoName}</span></h5>
+                        <h5>Project Version: <span class="text-dark">${projectVersion}</span></h5>
+                        <h5>Studio Version: <span class="text-dark">${studioVersion}</span></h5>
+                        <h5>Deployment Date: <span class="text-dark">${formatDate(deploymentDate)}</span></h5>
+                        <h5>Finish Date: <span class="text-dark">${formatDate(finishDate)}</span></h5>
+                    `;
+    
                     resultBlue.innerHTML = `
                         <h5>Commit User: <span class="text-dark">${commitUser}</span></h5>
+                        <h5>Commit Title: <span class="text-dark">${commitTitle}</span></h5>
                         <h5>Package Name: <span class="text-dark">${projectName}</span></h5>
                     `;
+    
+                    logButton.disabled = false;
+                    deployButton.disabled = false;
                 })
                 .catch(error => {
                     console.error('Error fetching project.json:', error);
@@ -178,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-
+    
 
     function logValues() {
         console.log('Deployment Username:', deploymentUsername);
