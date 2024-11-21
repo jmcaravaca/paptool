@@ -9,19 +9,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const commitSelect = document.getElementById('commitSelect');
     const resultOrange = document.getElementById('resultOrange');
     const resultBlue = document.getElementById('resultBlue');
+
     const logButton = document.getElementById('logButton');
     const deployButton = document.getElementById('deployButton');
+
+    const groupSelect = document.getElementById('groupSelect');
+    const groupSpinner = document.getElementById('groupSpinner');
+    const commitSpinner = document.getElementById('commitSpinner');
+    const repoSpinner = document.getElementById('repoSpinner');
 
     let projectName, projectVersion, studioVersion, commitHash, commitUser, repoName, deploymentUsername;
     let deploymentDate, finishDate;
 
-    // Show repositories dropdown on deployment username select
+    // Helper function to format date for API
+    function formatDate(date) {
+        const pad = (num) => num.toString().padStart(2, '0');
+        const day = pad(date.getDate());
+        const month = pad(date.getMonth() + 1);
+        const year = date.getFullYear();
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+    
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }    
+
     deploymentUsernameSelect.addEventListener('change', () => {
+        groupSelectContainer.style.display = 'block';
+        groupSelect.innerHTML = '<option selected disabled>Select group</option>';
+        groupSpinner.style.display = 'block';
+    
+        fetchGroups();
+    });
+    
+    function fetchGroups() {
+        fetch(`${gitlabApiUrl}/groups`, {
+            headers: { 'Authorization': `Bearer ${privateToken}` }
+        })
+        .then(response => response.json())
+        .then(groups => {
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = group.name;
+                groupSelect.appendChild(option);
+            });
+            groupSpinner.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error fetching groups:', error);
+            groupSpinner.style.display = 'none';
+        });
+    }
+    
+     
+
+    // Show repositories dropdown on group selectselect
+    groupSelect.addEventListener('change', () => {
         repoSelectContainer.style.display = 'block';
         repoSelect.innerHTML = '<option selected disabled>Select repository</option>';
-
-        // Fetch repositories
-        fetch(`${gitlabApiUrl}/projects?membership=true&order_by=last_activity_at`, {
+        repoSpinner.style.display = 'block';
+    
+        const groupId = groupSelect.value;
+    
+        fetch(`${gitlabApiUrl}/groups/${groupId}/projects`, {
             headers: { 'Authorization': `Bearer ${privateToken}` }
         })
         .then(response => response.json())
@@ -32,11 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = repo.name.toUpperCase();
                 repoSelect.appendChild(option);
             });
+            repoSpinner.style.display = 'none';
         })
         .catch(error => {
             console.error('Error fetching repositories:', error);
+            repoSpinner.style.display = 'none';
         });
     });
+    
 
     // Clear information and show commits when repo changes
     repoSelect.addEventListener('change', () => {
@@ -45,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultBlue.innerHTML = '';
         commitSelectContainer.style.display = 'none';
         commitSelect.innerHTML = '<option selected disabled>Select commit</option>';
+        commitSpinner.style.display = 'block'
 
         repoName = repoSelect.options[repoSelect.selectedIndex].text;
 
@@ -62,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     commitSelect.appendChild(option);
                 });
                 commitSelectContainer.style.display = 'block';
+                commitSpinner.style.display = 'none';
             })
             .catch(error => {
                 console.error('Error fetching commits:', error);
+                commitSpinner.style.display = 'none';
             });
         }
     });
@@ -97,14 +154,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     finishDate = new Date(deploymentDate.getTime() + 5 * 60000);
 
                     resultOrange.innerHTML = `
-                        <h5>Deployment Username: <span class="text-dark">${deploymentUsername}</span></h5>
-                        <h5>Commit Hash: <span class="text-dark">${commitHash}</span></h5>
-                        <h5>Repository Name: <span class="text-dark">${repoName}</span></h5>
-                        <h5>Project Version: <span class="text-dark">${projectVersion}</span></h5>
-                        <h5>Studio Version: <span class="text-dark">${studioVersion}</span></h5>
-                        <h5>Deployment Date: <span class="text-dark">${deploymentDate.toLocaleString()}</span></h5>
-                        <h5>Finish Date: <span class="text-dark">${finishDate.toLocaleString()}</span></h5>
-                    `;
+                    <h5>Deployment Username: <span class="text-dark">${deploymentUsername}</span></h5>
+                    <h5>Commit Hash: <span class="text-dark">${commitHash}</span></h5>
+                    <h5>Repository Name: <span class="text-dark">${repoName}</span></h5>
+                    <h5>Project Version: <span class="text-dark">${projectVersion}</span></h5>
+                    <h5>Studio Version: <span class="text-dark">${studioVersion}</span></h5>
+                    <h5>Deployment Date: <span class="text-dark">${formatDate(deploymentDate)}</span></h5>
+                    <h5>Finish Date: <span class="text-dark">${formatDate(finishDate)}</span></h5>
+                `;
+                
 
                     resultBlue.innerHTML = `
                         <h5>Commit User: <span class="text-dark">${commitUser}</span></h5>
@@ -128,15 +186,34 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Repository Name:', repoName);
         console.log('Project Version:', projectVersion);
         console.log('Studio Version:', studioVersion);
-        console.log('Deployment Date:', deploymentDate.toLocaleString());
-        console.log('Finish Date:', finishDate.toLocaleString());
+        const deploymentDateFormatted = formatDate(deploymentDate);
+        console.log('Deployment Date:', deploymentDateFormatted);
+        const finishDateFormatted = formatDate(finishDate);
+        console.log('Finish Date:', finishDateFormatted);
+
+        const payload = {
+            idApp: 4,
+            idConsulta: "cmta_insert_hist_despliegue",
+            parametros: [
+                { tipo: "string", valor: repoName },
+                { tipo: "string", valor: "PRODUCCION" },
+                { tipo: "string", valor: projectVersion },
+                { tipo: "string", valor: studioVersion },
+                { tipo: "string", valor: commitHash },
+                { tipo: "string", valor: deploymentUsername },
+                { tipo: "string", valor: deploymentUsername },
+                { tipo: "string", valor: deploymentDateFormatted },
+                { tipo: "string", valor: finishDateFormatted }
+            ]
+        };       
+        console.log(JSON.stringify(payload)) 
     } // Log values on button click
     logButton.addEventListener('click', logValues);
     
     // Function to deploy
     function Deploy() {
-        const deploymentDateFormatted = deploymentDate.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const finishDateFormatted = finishDate.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const deploymentDateFormatted = formatDate(deploymentDate);
+        const finishDateFormatted = formatDate(finishDate);
 
         const payload = {
             idApp: 4,

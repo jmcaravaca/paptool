@@ -68,17 +68,28 @@
                 <option value="E_JBI14">E_JBI14</option>
             </select>
         </div>
+        <div class="mb-3" id="groupSelectContainer" style="display: none;">
+            <label for="groupSelect" class="form-label">Select a Group:</label>
+            <select class="form-select" id="groupSelect">
+                <option selected disabled>Select group</option>
+            </select>
+            <div id="groupSpinner" class="spinner-border text-primary mt-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>                    
         <div class="mb-3" id="repoSelectContainer" style="display: none;">
             <label for="repoSelect" class="form-label">Select a Repository:</label>
             <select class="form-select" id="repoSelect">
                 <option selected disabled>Select repository</option>
             </select>
+            <div id="repoSpinner" class="spinner-border text-primary mt-3" role="status"> <span class="visually-hidden">Loading...</span> </div>
         </div>
         <div class="mb-3" id="commitSelectContainer" style="display: none;">
             <label for="commitSelect" class="form-label">Select a Commit:</label>
             <select class="form-select" id="commitSelect">
                 <option selected disabled>Select commit</option>
             </select>
+            <div id="commitSpinner" class="spinner-border text-primary mt-3" role="status"> <span class="visually-hidden">Loading...</span> </div>
         </div>
         <div id="resultOrange" class="mt-3 p-3 border border-warning rounded orange-theme">
             <!-- Orange section content will be displayed here -->
