@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultOrange = document.getElementById('resultOrange');
     const resultBlue = document.getElementById('resultBlue');
     const logButton = document.getElementById('logButton');
+    const deployButton = document.getElementById('deployButton');
 
     let projectName, projectVersion, studioVersion, commitHash, commitUser, repoName, deploymentUsername;
     let deploymentDate, finishDate;
@@ -120,8 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Log values on button click
-    logButton.addEventListener('click', () => {
+
+    function logValues() {
         console.log('Deployment Username:', deploymentUsername);
         console.log('Commit Hash:', commitHash);
         console.log('Repository Name:', repoName);
@@ -129,5 +130,47 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Studio Version:', studioVersion);
         console.log('Deployment Date:', deploymentDate.toLocaleString());
         console.log('Finish Date:', finishDate.toLocaleString());
-    });
+    } // Log values on button click
+    logButton.addEventListener('click', logValues);
+    
+    // Function to deploy
+    function Deploy() {
+        const deploymentDateFormatted = deploymentDate.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const finishDateFormatted = finishDate.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const payload = {
+            idApp: 4,
+            idConsulta: "cmta_insert_hist_despliegue",
+            parametros: [
+                { tipo: "string", valor: repoName },
+                { tipo: "string", valor: "PRODUCCION" },
+                { tipo: "string", valor: projectVersion },
+                { tipo: "string", valor: studioVersion },
+                { tipo: "string", valor: commitHash },
+                { tipo: "string", valor: deploymentUsername },
+                { tipo: "string", valor: deploymentUsername },
+                { tipo: "string", valor: deploymentDateFormatted },
+                { tipo: "string", valor: finishDateFormatted }
+            ]
+        };
+
+        fetch('https://intranet3.madrid.org/mova_rest_servicios/v1/consultas/actualizar', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic UFBST19BUFA6UFBST19BUFA=',
+                'Content-Type': 'application/json',
+                'Cookie': 'srv_id=a8a16aa00404192151cf94016aa1df42'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Deployment successful:', data);
+        })
+        .catch(error => {
+            console.error('Error deploying:', error);
+        });
+    }
+    // Deploy on button click
+    deployButton.addEventListener('click', Deploy);    
 });

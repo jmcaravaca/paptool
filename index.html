@@ -37,14 +37,22 @@
         .form-label {
             color: #ff6600;
         }
-        .btn-custom {
+        .btn-custom-blue {
+            background-color: #6394df;
+            color: white;
+            border: none;
+        }
+        .btn-custom-blue:hover {
+            background-color: #cce5ff;
+        }
+        .btn-custom-orange {
             background-color: #ff6600;
             color: white;
             border: none;
         }
-        .btn-custom:hover {
+        .btn-custom-orange:hover {
             background-color: #cc5200;
-        }
+        }        
     </style>
 </head>
 <body>
@@ -78,7 +86,8 @@
         <div id="resultBlue" class="mt-3 p-3 border border-primary rounded blue-theme">
             <!-- Blue section content will be displayed here -->
         </div>
-        <button id="logButton" class="btn btn-custom mt-3">Log Values</button>
+        <button id="logButton" class="btn btn-custom mt-3 blue-theme">Log Values</button>
+        <button id="deployButton" class="btn btn-custom mt-3 orange-theme">Deploy</button>
     </div>
     <script src="script.js"></script>
     <script src="bootstrap.bundle.min.js"></script>
