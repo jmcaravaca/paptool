@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const gitlabApiUrl = 'https://gitlab.comunidad.madrid/api/v4';
-    const privateToken = 'glpat-VRYpxh4XSgi3iW1y5NMK';
+    const privateToken = 'glpat-aeYLdwyfTAZqE3U52xAk';
 
     const deploymentUsernameSelect = document.getElementById('deploymentUsernameSelect');
     const repoSelectContainer = document.getElementById('repoSelectContainer');
@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(repos => {
+            repos.sort((a, b) => a.name.localeCompare(b.name));
             repos.forEach(repo => {
                 const option = document.createElement('option');
                 option.value = repo.id;
@@ -116,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             repoSpinner.style.display = 'none';
         });
     });
+    
     
 
     // Clear information and show commits when repo changes
@@ -239,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         };       
         console.log(JSON.stringify(payload)) 
+        showAlert('success', 'Deployment successful!');
     } // Log values on button click
     logButton.addEventListener('click', logValues);
     
@@ -271,15 +274,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Cookie': 'srv_id=a8a16aa00404192151cf94016aa1df42'
             },
             body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Deployment successful:', data);
-        })
-        .catch(error => {
+        }).then(response => response.json()).then(data => {
+            if (data.ejecucionCorrecta) {
+                showAlert('success', 'Deployment successful!');
+            } else {
+                showAlert('danger', 'Deployment failed. Please try again.');
+            }
+        }).catch(error => {
             console.error('Error deploying:', error);
+            showAlert('danger', 'Deployment failed. Please try again.');
         });
     }
     // Deploy on button click
     deployButton.addEventListener('click', Deploy);    
+
+    function showAlert(type, message) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alertElement = document.createElement('div');
+        alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+        alertElement.role = 'alert';
+        alertElement.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        alertContainer.appendChild(alertElement);
+    
+        // Automatically fade out the alert after 2 seconds
+        setTimeout(() => {
+            alertElement.classList.remove('show');
+            alertElement.classList.add('fade');
+            setTimeout(() => {
+                alertElement.remove();
+            }, 150); // Bootstrap's fade transition duration (150ms)
+        }, 2000);
+    }
+    
 });
